@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/retro.css">
+<style>
+  .sud-pad { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 12px; }
+  .sud-pad button {
+    font-family: inherit; font-size: 12px;
+    width: 44px; height: 44px;
+    background: var(--panel2); color: var(--cyan);
+    border: 3px solid var(--border); cursor: pointer;
+  }
+  .sud-pad button:hover { border-color: var(--cyan); }
+</style>
+</head>
+<body>
+<script src="../js/db.js"></script>
+<script src="../js/shell.js"></script>
+<script>
+(function () {
+  var shell = GameShell.start({
+    id: 'sudoku', title: 'SUDOKU', icon: '🔢',
+    mode: 'low', unit: 's',
+    width: 495, height: 495,
+    keys: [],
+    controls: ['KLIK SEL + ANGKA', 'SELESAIKAN SECEPAT MUNGKIN', 'SKOR = DETIK (Makin Cepat = Makin Bagus)']
+  });
+
+  var ctx = shell.ctx;
+  var SIZE = 495, CELL = 55;
+  var solution, puzzle, board, sel, selNum, seconds, timerId, done;
+
+  // ---- generator ----
+  function ok(b, r, c, n) {
+    for (var i = 0; i < 9; i++) {
+      if (b[r][i] === n || b[i][c] === n) return false;
+    }
+    var br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+    for (var y = 0; y < 3; y++) for (var x = 0; x < 3; x++)
+      if (b[br + y][bc + x] === n) return false;
+    return true;
+  }
+  function fill(b) {
+    for (var i = 0; i < 81; i++) {
+      var r = Math.floor(i / 9), c = i % 9;
+      if (b[r][c] === 0) {
+        var nums = [1,2,3,4,5,6,7,8,9].sort(function () { return Math.random() - 0.5; });
+        for (var j = 0; j < 9; j++)
+          if (ok(b, r, c, nums[j])) { b[r][c] = nums[j]; if (fill(b)) return true; b[r][c] = 0; }
+        return false;
+      }
+    }
+    return true;
+  }
+  function generate() {
+    solution = Array.from({length: 9}, function () { return Array(9).fill(0); });
+    fill(solution);
+    puzzle = solution.map(function (row) { return row.slice(); });
+    var holes = 45; // tingkat kesulitan
+    while (holes > 0) {
+      var r = Math.floor(Math.random() * 9), c = Math.floor(Math.random() * 9);
+      if (puzzle[r][c] !== 0) { puzzle[r][c] = 0; holes--; }
+    }
+    board = puzzle.map(function (row) { return row.slice(); });
+  }
+
+  function reset() {
+    generate();
+    sel = null; selNum = 0; seconds = 0; done = false;
+    shell.setHud({ TIME: '0s', LEFT: countLeft(), STATUS: 'PLAY' });
+    clearInterval(timerId);
+    timerId = setInterval(function () {
+      if (!done) { seconds++; shell.updateHud('TIME', seconds + 's'); }
+    }, 1000);
+    draw();
+  }
+
+  function countLeft() {
+    var n = 0;
+    board.forEach(function (row) { row.forEach(function (v) { if (v === 0) n++; }); });
+    return n;
+  }
+
+  shell.canvas.addEventListener('click', function (e) {
+    var rect = shell.canvas.getBoundingClientRect();
+    var scale = SIZE / rect.width;
+    var x = (e.clientX - rect.left) * scale;
+    var y = (e.clientY - rect.top) * scale;
+    var c = Math.floor(x / CELL), r = Math.floor(y / CELL);
+    if (r >= 0 && r < 9 && c >= 0 && c < 9 && puzzle[r][c] === 0) sel = { r: r, c: c };
+    else sel = null;
+    draw();
+  });
+  shell.canvas.addEventListener('touchstart', function (e) {
+    var t = e.touches[0];
+    var rect = shell.canvas.getBoundingClientRect();
+    var scale = SIZE / rect.width;
+    var c = Math.floor((t.clientX - rect.left) * scale / CELL);
+    var r = Math.floor((t.clientY - rect.top) * scale / CELL);
+    if (r >= 0 && r < 9 && c >= 0 && c < 9 && puzzle[r][c] === 0) { sel = { r: r, c: c }; draw(); }
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('keydown', function (e) {
+    var n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 9) place(n);
+  });
+
+  var pad = document.querySelector('.touchpad');
+  if (pad) {
+    pad.style.display = 'flex';
+    pad.innerHTML = '';
+    for (var i = 1; i <= 9; i++) {
+      (function (n) {
+        var b = document.createElement('button');
+        b.textContent = n;
+        b.onclick = function () { place(n); };
+        pad.appendChild(b);
+      })(i);
+    }
+  }
+
+  function place(n) {
+    if (done || !sel) return;
+    board[sel.r][sel.c] = n;
+    shell.updateHud('LEFT', countLeft());
+    if (countLeft() === 0) {
+      // validasi
+      var valid = true;
+      for (var r = 0; r < 9 && valid; r++) for (var c = 0; c < 9 && valid; c++)
+        if (board[r][c] !== solution[r][c]) valid = false;
+      if (valid) {
+        done = true;
+        shell.updateHud('STATUS', 'DONE!');
+        shell.gameOver(seconds, function (s) { return s + 's'; });
+      }
+    }
+    draw();
+  }
+
+  function draw() {
+    ctx.fillStyle = '#050508';
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    ctx.font = '18px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (var r = 0; r < 9; r++) for (var c = 0; c < 9; c++) {
+      var x = c * CELL, y = r * CELL;
+      if (sel && sel.r === r && sel.c === c) {
+        ctx.fillStyle = '#1a2a1a';
+        ctx.fillRect(x, y, CELL, CELL);
+      } else if (puzzle[r][c] !== 0) {
+        ctx.fillStyle = '#12121f';
+        ctx.fillRect(x, y, CELL, CELL);
+      }
+      if (board[r][c] !== 0) {
+        var fixed = puzzle[r][c] !== 0;
+        var wrong = !fixed && board[r][c] !== solution[r][c];
+        ctx.fillStyle = fixed ? '#cfd2e0' : (wrong ? '#ff3355' : '#33ff66');
+        ctx.fillText(board[r][c], x + CELL / 2, y + CELL / 2 + 1);
+      }
+    }
+    // grid lines
+    for (var i = 0; i <= 9; i++) {
+      ctx.strokeStyle = i % 3 === 0 ? '#3a3a5c' : '#1a1a2e';
+      ctx.lineWidth = i % 3 === 0 ? 3 : 1;
+      ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, SIZE); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i * CELL); ctx.lineTo(SIZE, i * CELL); ctx.stroke();
+    }
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    if (done) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0, 200, SIZE, 90);
+      ctx.fillStyle = '#33ff66';
+      ctx.font = '20px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('SOLVED!', SIZE / 2, 250);
+      ctx.textAlign = 'left';
+    }
+  }
+
+  reset();
+})();
+</script>
+</body>
+</html>

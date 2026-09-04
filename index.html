@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RETRO ARCADE — 7 Game Klasik + Leaderboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/retro.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="logo">► RETRO<span>ARCADE</span>_</div>
+    <nav class="topnav">
+      <a href="#games">GAMES</a>
+      <a href="#boards">LEADERBOARD</a>
+      <a href="#about">INFO</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="marquee"><div>★ SELAMAT DATANG DI RETRO ARCADE ★ 7 GAME KLASIK ★ MASUKKAN USERNAME &amp; Buktikan skormu masuk TOP 10 ★ INSERT COIN... ★ PRESS START ★ SELAMAT DATANG DI RETRO ARCADE ★ 7 GAME KLASIK ★ MASUKKAN USERNAME &amp; Buktikan skormu masuk TOP 10 ★ INSERT COIN... ★ PRESS START ★</div></div>
+
+  <!-- STATS -->
+  <div class="panel">
+    <div class="panel-title">▣ SYSTEM STATUS / DASHBOARD</div>
+    <div class="stats">
+      <div class="stat"><div class="num" id="st-games">7</div><div class="lbl">GAMES</div></div>
+      <div class="stat"><div class="num" id="st-players">0</div><div class="lbl">PLAYERS</div></div>
+      <div class="stat"><div class="num" id="st-plays">0</div><div class="lbl">GAMES PLAYED</div></div>
+      <div class="stat"><div class="num" id="st-entries">0</div><div class="lbl">RECORDS</div></div>
+    </div>
+  </div>
+
+  <!-- GAME GRID -->
+  <div class="panel" id="games">
+    <div class="panel-title">▶ SELECT YOUR GAME <span class="blink">_</span></div>
+    <div class="grid">
+
+      <a class="game-card" href="games/snake.html">
+        <div class="icon">🐍</div>
+        <h3>SNAKE</h3>
+        <p>Makan, tumbuh, jangan tabrak diri sendiri. Klasik Nokia abadi.</p>
+        <div class="meta">MODE: SKOR TERTINGGI</div>
+        <div class="press">&gt;&gt; PRESS START</div>
+      </a>
+
+      <a class="game-card" href="games/tetris.html">
+        <div class="icon">🧱</div>
+        <h3>TETRIS</h3>
+        <p>Susun balok, hapus baris, jangan sampai penuh ke atas.</p>
+        <div class="meta">MODE: SKOR TERTINGGI</div>
+        <div class="press">&gt;&gt; PRESS START</div>
+      </a>
+
+      <a class="game-card" href="games/flappy.html">
+        <div class="icon">🐤</div>
+        <h3>FLAPPY BIRD</h3>
+        <p>Satu tap, satu tepuk sayap. Lewati pipa sebanyak mungkin.</p>
+        <div class="meta">MODE: SKOR TERTINGGI</div>
+        <div class="press">&gt;&gt; PRESS START</div>
+      </a>
+
+      <a class="game-card" href="games/sudoku.html">
+        <div class="icon">🔢</div>
+        <h3>SUDOKU</h3>
+        <p>Isi 9x9, satu angka per baris/kolom/kotak. Makin cepat makin jago.</p>
+        <div class="meta">MODE: WAKTU TERCEPAT</div>
+        <div class="press">&gt;&gt; PRESS START</div>
+      </a>
+
+      <a class="game-card" href="games/bounce.html">
+        <div class="icon">🔴</div>
+        <h3>BOUNCE</h3>
+        <p>Bola memantul naik platform. Jangan sampai jatuh ke bawah!</p>
+        <div class="meta">MODE: SKOR TERTINGGI</div>
+        <div class="press">&gt;&gt; PRESS START</div>
+      </a>
+
+      <a class="game-card" href="games/mario.html">
+        <div class="icon">🍄</div>
+        <h3>SUPER MARIO RUN</h3>
+        <p>Lompat, ambil koin, hindari musuh, capai bendera!</p>
+        <div class="meta">MODE: SKOR TERTINGGI</div>
+        <div class="press">&gt;&gt; PRESS START</div>
+      </a>
+
+      <a class="game-card" href="games/pong.html">
+        <div class="icon">🏓</div>
+        <h3>PONG</h3>
+        <p>Game pertama dalam sejarah. Kalahkan CPU 5 kali untuk menang.</p>
+        <div class="meta">MODE: SKOR TERTINGGI</div>
+        <div class="press">&gt;&gt; PRESS START</div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- GLOBAL LEADERBOARD -->
+  <div class="panel" id="boards">
+    <div class="panel-title">🏆 HALL OF FAME — JUARA TIPE GAME</div>
+    <div class="grid" id="global-boards"></div>
+  </div>
+
+  <!-- ABOUT -->
+  <div class="panel" id="about">
+    <div class="panel-title">ℹ ABOUT / CARA KERJA</div>
+    <p style="font-size:9px; line-height:2">
+      &gt; Semua skor disimpan lewat <span style="color:var(--green)">FLOATING DB</span> — database
+      mengambang berbasis localStorage di browser masing-masing pemain.<br>
+      &gt; Tanpa backend, tanpa login, tanpa server. Situs 100% statis — cocok untuk
+      <span style="color:var(--amber)">VERCEL</span> / GITHUB PAGES.<br>
+      &gt; Untuk lomba: mainkan di satu perangkat/laptop yang sama (mis. display panitia),
+      semua skor top 10 tiap game akan terkumpul otomatis.<br>
+      &gt; Butuh leaderboard global antar-perangkat? SambungkanFloating DB ke
+      Vercel KV / Supabase nanti — strukturnya sudah siap.<br>
+    </p>
+  </div>
+
+</div>
+
+<footer>
+  © 2026 RETRO ARCADE — dibuat untuk komunitas lomba game klasik.<br>
+  antipondan.vercel.app
+</footer>
+
+<script src="js/db.js"></script>
+<script>
+(function () {
+  var GAMES = [
+    { id: 'snake',  name: 'SNAKE',       icon: '🐍' },
+    { id: 'tetris', name: 'TETRIS',      icon: '🧱' },
+    { id: 'flappy', name: 'FLAPPY BIRD', icon: '🐤' },
+    { id: 'sudoku', name: 'SUDOKU',      icon: '🔢', mode: 'low', unit: 's' },
+    { id: 'bounce', name: 'BOUNCE',      icon: '🔴' },
+    { id: 'mario',  name: 'MARIO',       icon: '🍄' },
+    { id: 'pong',   name: 'PONG',        icon: '🏓' }
+  ];
+
+  /* ---- ADMIN TERSEMBUNYI: klik logo 5x untuk reset data ---- */
+  var clicks = 0, clickTimer = null;
+  document.querySelector('.logo').addEventListener('click', function () {
+    clicks++;
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(function () { clicks = 0; }, 2000);
+    if (clicks >= 5) {
+      clicks = 0;
+      if (confirm('MODE ADMIN\n\nHAPUS SEMUA SKOR & DATA?')) {
+        FDB.wipe();
+        refresh();
+      }
+    }
+  });
+
+  function refresh() {
+    var s = FDB.stats();
+    document.getElementById('st-players').textContent = s.players;
+    document.getElementById('st-plays').textContent = s.plays;
+    document.getElementById('st-entries').textContent = s.entries;
+    renderBoards();
+  }
+
+  function renderBoards() {
+    var host = document.getElementById('global-boards');
+    var html = '';
+    GAMES.forEach(function (g) {
+      var top = FDB.top(g.id, 3, g.mode);
+      var rows = top.length
+        ? top.map(function (r, i) {
+            var val = (g.mode === 'low') ? r.score + 's' : r.score.toLocaleString('en-US');
+            return (i + 1) + '. ' + r.name + ' — ' + val;
+          }).join('<br>')
+        : '<span style="color:var(--dim)">-- KOSONG --</span>';
+      html += '<div style="border:2px solid var(--border);padding:12px;background:#050508">' +
+        '<div style="font-size:10px;color:var(--green);margin-bottom:8px">' + g.icon + ' ' + g.name + '</div>' +
+        '<div style="font-size:9px;line-height:2;color:var(--text)">' + rows + '</div>' +
+        '<div style="margin-top:8px"><a href="games/' + g.id + '.html" style="font-size:8px">[ MAIN ]</a></div>' +
+        '</div>';
+    });
+    host.innerHTML = html;
+  }
+
+  document.getElementById('btn-wipe').onclick = function () {
+    if (confirm('HAPUS SEMUA SKOR & DATA?')) { FDB.wipe(); refresh(); }
+  };
+
+  refresh();
+})();
+</script>
+</body>
+</html>

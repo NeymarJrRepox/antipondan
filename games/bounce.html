@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/retro.css">
+</head>
+<body>
+<script src="../js/db.js"></script>
+<script src="../js/shell.js"></script>
+<script>
+(function () {
+  // BOUNCE — ala Nokia: bola memantul naik platform, ambil berlian, hindari jatuh
+  var shell = GameShell.start({
+    id: 'bounce', title: 'BOUNCE', icon: '🔴',
+    width: 420, height: 560,
+    keys: ['left', 'right'],
+    controls: ['LEFT/RIGHT = GERAK', 'BOLA MEMANTUL OTOMATIS', 'AMBIL 💎 / HINDARI JATUH']
+  });
+
+  var ctx = shell.ctx;
+  var W = 420, H = 560;
+  var ball, plats, gems, score, camY, dead, started;
+
+  function reset() {
+    ball = { x: 210, y: 500, vx: 0, vy: -9, r: 10 };
+    plats = [{ x: 160, y: 520, w: 100 }];
+    gems = [];
+    score = 0; camY = 0; dead = false; started = false;
+    // generate platform awal ke atas
+    var y = 520;
+    while (y > -2000) {
+      y -= 55 + Math.random() * 45;
+      plats.push({
+        x: Math.random() * (W - 110),
+        y: y,
+        w: 60 + Math.random() * 60
+      });
+      if (Math.random() < 0.4) {
+        gems.push({ x: Math.random() * (W - 30) + 10, y: y - 30, got: false });
+      }
+    }
+    shell.setHud({ SCORE: 0, HEIGHT: 0 });
+    requestAnimationFrame(tick);
+  }
+
+  shell.on('left', function (down) { ball.vx = down ? -3.4 : 0; started = true; });
+  shell.on('right', function (down) { ball.vx = down ? 3.4 : 0; started = true; });
+
+  function tick() {
+    if (!dead) {
+      ball.vy += 0.35;
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+      // dinding
+      if (ball.x < ball.r) { ball.x = ball.r; ball.vx = Math.abs(ball.vx); }
+      if (ball.x > W - ball.r) { ball.x = W - ball.r; ball.vx = -Math.abs(ball.vx); }
+
+      // pantul platform (hanya saat jatuh)
+      if (ball.vy > 0) {
+        plats.forEach(function (p) {
+          if (ball.x > p.x - ball.r && ball.x < p.x + p.w + ball.r &&
+              ball.y + ball.r > p.y && ball.y + ball.r < p.y + 14) {
+            ball.y = p.y - ball.r;
+            ball.vy = -9.2;
+            if (!started) started = true;
+          }
+        });
+      }
+
+      // gems
+      gems.forEach(function (g) {
+        if (!g.got && Math.abs(g.x - ball.x) < 18 && Math.abs(g.y - ball.y) < 18) {
+          g.got = true;
+          score += 50;
+          shell.updateHud('SCORE', score);
+        }
+      });
+
+      // kamera mengikuti ketinggian
+      var target = Math.max(0, 400 - ball.y);
+      if (target > camY) {
+        score += Math.floor(target - camY) / 5;
+        camY = target;
+        shell.updateHud('SCORE', Math.floor(score));
+        shell.updateHud('HEIGHT', Math.floor(camY / 10) + 'm');
+      }
+
+      // jatuh = mati
+      if (ball.y - camY > H + 40) {
+        dead = true;
+        draw();
+        shell.gameOver(Math.floor(score));
+        return;
+      }
+    }
+    draw();
+    requestAnimationFrame(tick);
+  }
+
+  function draw() {
+    ctx.fillStyle = '#050510';
+    ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    ctx.translate(0, camY);
+
+    // bintang
+    ctx.fillStyle = '#1a1a35';
+    for (var i = 0; i < 60; i++) ctx.fillRect((i * 131) % W, ((i * 89) % 2600) - 2000, 2, 2);
+
+    plats.forEach(function (p) {
+      ctx.fillStyle = '#00e5ff';
+      ctx.fillRect(p.x, p.y, p.w, 8);
+      ctx.fillStyle = '#00889a';
+      ctx.fillRect(p.x, p.y + 8, p.w, 4);
+    });
+    gems.forEach(function (g) {
+      if (!g.got) {
+        ctx.fillStyle = '#ff44aa';
+        ctx.fillRect(g.x - 6, g.y - 6, 12, 12);
+        ctx.fillStyle = '#ff88cc';
+        ctx.fillRect(g.x - 3, g.y - 3, 6, 6);
+      }
+    });
+
+    // bola
+    ctx.fillStyle = '#ff3355';
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ff8899';
+    ctx.beginPath();
+    ctx.arc(ball.x - 3, ball.y - 3, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+
+    if (!started) txt('PRESS ◀ ▶ TO MOVE', '#ffb000');
+    if (dead) txt('GAME OVER', '#ff3355');
+  }
+  function txt(t, color) {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, 250, W, 60);
+    ctx.fillStyle = color;
+    ctx.font = '15px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(t, W / 2, 285);
+    ctx.textAlign = 'left';
+  }
+
+  reset();
+})();
+</script>
+</body>
+</html>

@@ -17,15 +17,31 @@ Situs arcade retro (CRT/console vibes) untuk lomba game klasik.
 Tiap game punya **dashboard rank Top 10 sendiri**, pemain wajib memasukkan
 username saat game over (username diingat otomatis untuk ronde berikutnya).
 
-## Floating DB
-Semua data (skor, username, statistik dashboard) disimpan lewat **Floating DB**
-(`js/db.js`) — database mengambang berbasis `localStorage`, tanpa backend:
+## Floating DB + Cloud Sync (Leaderboard Global)
+Leaderboard kini **terpusat di server** — semua perangkat (PC, HP, laptop peserta)
+melihat & mengisi papan rank yang sama lewat endpoint `/api/scores`
+(Vercel Serverless Function + Vercel KV). localStorage hanya cache offline:
+kalau cloud gagal/belum disetup, situs otomatis fallback ke mode per-perangkat.
 
-- `FDB.top(gameId, 10)` — ambil Top 10
-- `FDB.submit(gameId, username, score)` — simpan skor (otomatis auto-trim Top 10)
-- `FDB.stats()` — statistik dashboard (players, plays, records)
-- **Reset data (admin):** klik logo `► RETROARCADE_` di dashboard **5x** — tidak terlihat pemain
-- Nama terlarang diblokir otomatis (daftar `BLOCKED_NAMES` di `js/db.js`, mis. nama admin "MIKE")
+- `FDB.top(gameId, 10)` — ambil Top 10 (dari server/cache)
+- `FDB.submit(gameId, username, score)` — simpan skor ke server + catat riwayat
+- `FDB.history(n)` / `FDB.allPlayers()` — riwayat lengkap & semua player
+- `FDB.isCloud()` — true kalau koneksi cloud aktif
+- **Reset data (admin):** klik logo `► RETROARCADE_` di dashboard **5x**
+  (menghapus cache lokal; hapus data server lewat Vercel KV dashboard / key `arcade:db`)
+- Nama terlarang diblokir di client **dan** server (`BLOCKED_NAMES`, mis. "MIKE")
+
+## WAJIB: Setup Vercel KV (sekali saja)
+Tanpa langkah ini leaderboard tetap jalan tapi hanya per-perangkat.
+
+1. Push semua file (termasuk folder `api/` dan `package.json`) ke GitHub → Vercel deploy otomatis.
+2. Buka project di Vercel → tab **Storage** → **Create Database** → pilih **Upstash Redis** (plan Hobby gratis) → Create.
+3. Klik **Connect Project** → pilih project ini → Connect. (Semua env var `KV_*` terisi otomatis.)
+4. **Redeploy** project (Deployments → ⋯ → Redeploy) supaya function membaca env var.
+5. Selesai — buka situs, main, isi nama. Skor langsung tersimpan global di `arcade:db`.
+
+Cek cepat: buka `https://antipondan.vercel.app/api/scores` — kalau muncul JSON
+`{"version":3,...}` berarti cloud aktif.
 
 > Catatan: localStorage per-browser/per-perangkat. Untuk lomba di satu tempat,
 > gunakan satu perangkat yang sama (mis. laptop display panitia). Jika nanti

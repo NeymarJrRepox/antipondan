@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/retro.css">
+</head>
+<body>
+<script src="../js/db.js?v=4"></script>
+<script src="../js/shell.js?v=4"></script>
+<script>
+(function () {
+  var shell = GameShell.start({
+    id: 'tetris', title: 'TETRIS', icon: '🧱',
+    width: 360, height: 600,
+    keys: ['left', 'right', 'down', 'up', 'act'],
+    controls: ['LEFT/RIGHT = GERAK', 'UP = PUTAR', 'DOWN = TURUN CEPAT', 'SPACE = DROP LANGSUNG']
+  });
+
+  var ctx = shell.ctx;
+  var COLS = 10, ROWS = 20, CELL = 30;
+  var COLORS = ['#00e5ff', '#ffb000', '#a04ad8', '#33ff66', '#ff3355', '#3366ff', '#ffdd44'];
+  // I J L O S T Z
+  var SHAPES = [
+    [[1,1,1,1]],
+    [[1,0,0],[1,1,1]],
+    [[0,0,1],[1,1,1]],
+    [[1,1],[1,1]],
+    [[0,1,1],[1,1,0]],
+    [[0,1,0],[1,1,1]],
+    [[1,1,0],[0,1,1]]
+  ];
+  var board, cur, next, score, lines, level, dropTimer, dead;
+
+  function emptyBoard() {
+    return Array.from({length: ROWS}, function () { return Array(COLS).fill(-1); });
+  }
+  function spawn() {
+    var t = Math.floor(Math.random() * 7);
+    cur = { shape: SHAPES[t].map(function (r) { return r.slice(); }), c: 3, r: 0, k: t };
+  }
+  function collides(shape, r, c) {
+    for (var y = 0; y < shape.length; y++)
+      for (var x = 0; x < shape[y].length; x++)
+        if (shape[y][x]) {
+          var nr = r + y, nc = c + x;
+          if (nc < 0 || nc >= COLS || nr >= ROWS) return true;
+          if (nr >= 0 && board[nr][nc] >= 0) return true;
+        }
+    return false;
+  }
+  function rotate(s) {
+    var out = Array.from({length: s[0].length}, function () { return []; });
+    for (var y = 0; y < s.length; y++)
+      for (var x = 0; x < s[y].length; x++)
+        out[x][s.length - 1 - y] = s[y][x];
+    return out;
+  }
+  function merge() {
+    cur.shape.forEach(function (row, y) {
+      row.forEach(function (v, x) {
+        if (v && cur.r + y >= 0) board[cur.r + y][cur.c + x] = cur.k;
+      });
+    });
+    var cleared = 0;
+    for (var r = ROWS - 1; r >= 0; r--) {
+      if (board[r].every(function (v) { return v >= 0; })) {
+        board.splice(r, 1);
+        board.unshift(Array(COLS).fill(-1));
+        cleared++; r++;
+      }
+    }
+    if (cleared) {
+      lines += cleared;
+      score += [0, 100, 300, 500, 800][cleared] * level;
+      level = Math.floor(lines / 10) + 1;
+      shell.updateHud('SCORE', score);
+      shell.updateHud('LINES', lines);
+      shell.updateHud('LEVEL', level);
+    }
+    if (collides(cur.shape, cur.r, cur.c)) { dead = true; shell.gameOver(score); return; }
+    spawn();
+  }
+
+  function reset() {
+    board = emptyBoard();
+    score = 0; lines = 0; level = 1; dead = false;
+    shell.setHud({ SCORE: 0, LINES: 0, LEVEL: 1 });
+    spawn();
+    last = performance.now();
+    requestAnimationFrame(tick);
+  }
+
+  function move(dx) {
+    if (!dead && !collides(cur.shape, cur.r, cur.c + dx)) cur.c += dx;
+  }
+  function softDrop() {
+    if (dead) return;
+    if (!collides(cur.shape, cur.r + 1, cur.c)) { cur.r++; score += 1; shell.updateHud('SCORE', score); }
+    else merge();
+  }
+  function hardDrop() {
+    if (dead) return;
+    while (!collides(cur.shape, cur.r + 1, cur.c)) { cur.r++; score += 2; }
+    merge(); shell.updateHud('SCORE', score);
+  }
+
+  shell.on('left', function () { move(-1); });
+  shell.on('right', function () { move(1); });
+  shell.on('down', function () { softDrop(); });
+  shell.on('up', function () {
+    if (dead) return;
+    var rot = rotate(cur.shape);
+    if (!collides(rot, cur.r, cur.c)) cur.shape = rot;
+    else if (!collides(rot, cur.r, cur.c - 1)) { cur.shape = rot; cur.c--; }
+    else if (!collides(rot, cur.r, cur.c + 1)) { cur.shape = rot; cur.c++; }
+  });
+  shell.on('act', function () { hardDrop(); });
+
+  var last = 0;
+  function tick(now) {
+    if (!dead) {
+      if (now - last > Math.max(120, 800 - (level - 1) * 70)) { last = now; softDrop(); }
+      draw();
+      requestAnimationFrame(tick);
+    } else draw();
+  }
+
+  function draw() {
+    ctx.fillStyle = '#050508';
+    ctx.fillRect(0, 0, 360, 600);
+    for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) {
+      ctx.strokeStyle = '#0d0d18';
+      ctx.strokeRect(c * CELL, r * CELL, CELL, CELL);
+      if (board[r][c] >= 0) block(c, r, COLORS[board[r][c]]);
+    }
+    if (cur) cur.shape.forEach(function (row, y) {
+      row.forEach(function (v, x) {
+        if (v && cur.r + y >= 0) block(cur.c + x, cur.r + y, COLORS[cur.k]);
+      });
+    });
+    if (dead) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0, 250, 360, 90);
+      ctx.fillStyle = '#ff3355';
+      ctx.font = '18px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('GAME OVER', 180, 300);
+      ctx.textAlign = 'left';
+    }
+  }
+  function block(c, r, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 2, 5);
+  }
+
+  reset();
+})();
+</script>
+</body>
+</html>

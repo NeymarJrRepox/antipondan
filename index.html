@@ -122,7 +122,7 @@
   antipondan.vercel.app
 </footer>
 
-<script src="js/db.js"></script>
+<script src="js/db.js?v=4"></script>
 <script>
 (function () {
   var GAMES = [
@@ -218,6 +218,8 @@
   }
 
   refresh();
+  // refresh otomatis saat data cloud masuk (leaderboard global)
+  if (FDB.onSync) FDB.onSync(refresh);
 })();
 </script>
 </body>

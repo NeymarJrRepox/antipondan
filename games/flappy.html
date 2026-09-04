@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/retro.css">
+</head>
+<body>
+<script src="../js/db.js?v=4"></script>
+<script src="../js/shell.js?v=4"></script>
+<script>
+(function () {
+  var shell = GameShell.start({
+    id: 'flappy', title: 'FLAPPY BIRD', icon: '🐤',
+    width: 420, height: 560,
+    keys: ['act'],
+    controls: ['SPACE / TAP = TERBANG']
+  });
+
+  var ctx = shell.ctx;
+  var W = 420, H = 560, GAP = 150, PIPE_W = 60;
+  var bird, pipes, score, frames, dead, started, raf;
+
+  function reset() {
+    bird = { x: 90, y: H / 2, v: 0 };
+    pipes = []; score = 0; frames = 0; dead = false; started = false;
+    shell.setHud({ SCORE: 0, BEST: FDB.top('flappy', 1)[0] ? FDB.top('flappy', 1)[0].score : 0 });
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(tick);
+  }
+
+  function flap() {
+    if (dead) return;
+    if (!started) started = true;
+    bird.v = -6.2;
+  }
+  shell.on('act', flap);
+  shell.canvas.addEventListener('touchstart', function (e) { flap(); e.preventDefault(); }, { passive: false });
+
+  function tick() {
+    frames++;
+    if (started && !dead) {
+      bird.v += 0.32;
+      bird.y += bird.v;
+      // pipes
+      if (frames % 90 === 0) {
+        var top = 60 + Math.random() * (H - GAP - 180);
+        pipes.push({ x: W, top: top, passed: false });
+      }
+      pipes.forEach(function (p) { p.x -= 2.4; });
+      pipes = pipes.filter(function (p) { return p.x > -PIPE_W; });
+      // collision
+      if (bird.y > H - 30 || bird.y < 0) die();
+      pipes.forEach(function (p) {
+        if (bird.x + 12 > p.x && bird.x - 12 < p.x + PIPE_W) {
+          if (bird.y - 12 < p.top || bird.y + 12 > p.top + GAP) die();
+        }
+        if (!p.passed && p.x + PIPE_W < bird.x - 12) {
+          p.passed = true;
+          score++;
+          shell.updateHud('SCORE', score);
+        }
+      });
+    }
+    draw();
+    if (!dead) raf = requestAnimationFrame(tick);
+  }
+
+  function die() {
+    dead = true;
+    draw();
+    shell.gameOver(score);
+  }
+
+  function draw() {
+    // sky
+    ctx.fillStyle = '#0b1030';
+    ctx.fillRect(0, 0, W, H);
+    // stars
+    ctx.fillStyle = '#2a2a55';
+    for (var i = 0; i < 30; i++) {
+      ctx.fillRect((i * 97) % W, (i * 53) % (H - 60), 2, 2);
+    }
+    // pipes
+    pipes.forEach(function (p) {
+      ctx.fillStyle = '#33ff66';
+      ctx.fillRect(p.x, 0, PIPE_W, p.top);
+      ctx.fillRect(p.x, p.top + GAP, PIPE_W, H - p.top - GAP);
+      ctx.fillStyle = '#1fbb4a';
+      ctx.fillRect(p.x, p.top - 14, PIPE_W, 14);
+      ctx.fillRect(p.x, p.top + GAP, PIPE_W, 14);
+    });
+    // ground
+    ctx.fillStyle = '#3a2a1a';
+    ctx.fillRect(0, H - 30, W, 30);
+    // bird
+    ctx.fillStyle = '#ffdd44';
+    ctx.fillRect(bird.x - 12, bird.y - 12, 24, 24);
+    ctx.fillStyle = '#ff3355';
+    ctx.fillRect(bird.x + 4, bird.y - 6, 6, 6);
+    // flap trail
+    if (bird.v < 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.fillRect(bird.x - 18, bird.y + 8, 8, 3);
+    }
+    if (!started && !dead) {
+      txt('TAP / SPACE TO FLY', '#ffb000', 300);
+    }
+    if (dead) txt('GAME OVER', '#ff3355', 300);
+  }
+  function txt(t, color, y) {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, y - 26, W, 50);
+    ctx.fillStyle = color;
+    ctx.font = '16px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(t, W / 2, y);
+    ctx.textAlign = 'left';
+  }
+
+  reset();
+})();
+</script>
+</body>
+</html>
